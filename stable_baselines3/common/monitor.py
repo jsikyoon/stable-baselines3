@@ -92,7 +92,17 @@ class Monitor(gym.Wrapper):
         """
         if self.needs_reset:
             raise RuntimeError("Tried to step environment that needs reset")
-        observation, reward, done, info = self.env.step(action)
+        out = self.env.step(action)
+        if len(out) == 4:
+            observation, reward, done, info = out
+        elif len(out) == 5:
+            observation, reward, terminated, truncated, info = out
+            if terminated or truncated:
+                done = True
+            else:
+                done = False
+        else:
+            raise NotImplementedError("Unknown step return format")
         self.rewards.append(reward)
         if done:
             self.needs_reset = True

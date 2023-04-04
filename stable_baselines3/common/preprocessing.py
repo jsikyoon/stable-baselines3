@@ -4,6 +4,7 @@ from typing import Dict, Tuple, Union
 import numpy as np
 import torch as th
 from gym import spaces
+from gymnasium import spaces as gymnasium_spaces
 from torch.nn import functional as F
 
 
@@ -46,7 +47,7 @@ def is_image_space(
     :return:
     """
     check_dtype = check_bounds = not normalized_image
-    if isinstance(observation_space, spaces.Box) and len(observation_space.shape) == 3:
+    if (isinstance(observation_space, spaces.Box) or isinstance(observation_space, gymnasium_spaces.Box)) and len(observation_space.shape) == 3:
         # Check the type
         if check_dtype and observation_space.dtype != np.uint8:
             return False
@@ -148,21 +149,21 @@ def get_obs_shape(
     :param observation_space:
     :return:
     """
-    if isinstance(observation_space, spaces.Box):
+    if isinstance(observation_space, spaces.Box) or isinstance(observation_space, gymnasium_spaces.Box):
         return observation_space.shape
-    elif isinstance(observation_space, spaces.Discrete):
+    elif isinstance(observation_space, spaces.Discrete) or isinstance(observation_space, gymnasium_spaces.Discrete):
         # Observation is an int
         return (1,)
-    elif isinstance(observation_space, spaces.MultiDiscrete):
+    elif isinstance(observation_space, spaces.MultiDiscrete) or isinstance(observation_space, gymnasium_spaces.MultiDiscrete):
         # Number of discrete features
         return (int(len(observation_space.nvec)),)
-    elif isinstance(observation_space, spaces.MultiBinary):
+    elif isinstance(observation_space, spaces.MultiBinary) or isinstance(observation_space, gymnasium_spaces.MultiBinary):
         # Number of binary features
         if type(observation_space.n) in [tuple, list, np.ndarray]:
             return tuple(observation_space.n)
         else:
             return (int(observation_space.n),)
-    elif isinstance(observation_space, spaces.Dict):
+    elif isinstance(observation_space, spaces.Dict) or isinstance(observation_space, gymnasium_spaces.Dict):
         return {key: get_obs_shape(subspace) for (key, subspace) in observation_space.spaces.items()}  # type: ignore[misc]
 
     else:
@@ -195,15 +196,15 @@ def get_action_dim(action_space: spaces.Space) -> int:
     :param action_space:
     :return:
     """
-    if isinstance(action_space, spaces.Box):
+    if isinstance(action_space, spaces.Box) or isinstance(action_space, gymnasium_spaces.Box):
         return int(np.prod(action_space.shape))
-    elif isinstance(action_space, spaces.Discrete):
+    elif isinstance(action_space, spaces.Discrete) or isinstance(action_space, gymnasium_spaces.Discrete):
         # Action is an int
         return 1
-    elif isinstance(action_space, spaces.MultiDiscrete):
+    elif isinstance(action_space, spaces.MultiDiscrete) or isinstance(action_space, gymnasium_spaces.MultiDiscrete):
         # Number of discrete actions
         return int(len(action_space.nvec))
-    elif isinstance(action_space, spaces.MultiBinary):
+    elif isinstance(action_space, spaces.MultiBinary) or isinstance(action_space, gymnasium_spaces.MultiBinary):
         # Number of binary actions
         return int(action_space.n)
     else:

@@ -6,6 +6,7 @@ from typing import Any, Dict, List, Optional, Tuple, TypeVar, Union
 import numpy as np
 import torch as th
 from gym import spaces
+from gymnasium import spaces as gymnasium_spaces
 from torch import nn
 from torch.distributions import Bernoulli, Categorical, Normal
 
@@ -672,14 +673,14 @@ def make_proba_distribution(
     if dist_kwargs is None:
         dist_kwargs = {}
 
-    if isinstance(action_space, spaces.Box):
+    if isinstance(action_space, spaces.Box) or isinstance(action_space, gymnasium_spaces.Box):
         cls = StateDependentNoiseDistribution if use_sde else DiagGaussianDistribution
         return cls(get_action_dim(action_space), **dist_kwargs)
-    elif isinstance(action_space, spaces.Discrete):
+    elif isinstance(action_space, spaces.Discrete) or isinstance(action_space, gymnasium_spaces.Discrete):
         return CategoricalDistribution(action_space.n, **dist_kwargs)
-    elif isinstance(action_space, spaces.MultiDiscrete):
+    elif isinstance(action_space, spaces.MultiDiscrete) or isinstance(action_space, gymnasium_spaces.MultiDiscrete):
         return MultiCategoricalDistribution(list(action_space.nvec), **dist_kwargs)
-    elif isinstance(action_space, spaces.MultiBinary):
+    elif isinstance(action_space, spaces.MultiBinary) or isinstance(action_space, gymnasium_spaces.MultiBinary):
         return BernoulliDistribution(action_space.n, **dist_kwargs)
     else:
         raise NotImplementedError(

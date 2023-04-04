@@ -51,13 +51,24 @@ class DummyVecEnv(VecEnv):
 
     def step_wait(self) -> VecEnvStepReturn:
         for env_idx in range(self.num_envs):
-            obs, self.buf_rews[env_idx], self.buf_dones[env_idx], self.buf_infos[env_idx] = self.envs[env_idx].step(
-                self.actions[env_idx]
-            )
+            out = self.envs[env_idx].step(self.actions[env_idx])
+            if len(out) == 4:
+                obs, self.buf_rews[env_idx], self.buf_dones[env_idx], self.buf_infos[env_idx] = out
+            elif len(out) == 5: # to cover gymnasium environments
+                obs, self.buf_rews[env_idx], terminated, truncated, self.buf_infos[env_idx] = out
+                if terminated or truncated:
+                    self.buf_dones[env_idx] = True
+                else:
+                    self.buf_dones[env_idx] = False
+            else:
+                raise NotImplementedError("The environment should have either 4 or 5 elements in the tuple returned by step()")
+            
             if self.buf_dones[env_idx]:
                 # save final observation where user can get it, then reset
                 self.buf_infos[env_idx]["terminal_observation"] = obs
                 obs = self.envs[env_idx].reset()
+                if type(obs) == tuple: # to cover gymnasium environments
+                    obs = obs[0]
             self._save_obs(env_idx, obs)
         return (self._obs_from_buf(), np.copy(self.buf_rews), np.copy(self.buf_dones), deepcopy(self.buf_infos))
 
@@ -72,6 +83,8 @@ class DummyVecEnv(VecEnv):
     def reset(self) -> VecEnvObs:
         for env_idx in range(self.num_envs):
             obs = self.envs[env_idx].reset()
+            if type(obs) == tuple: # to cover gymnasium environments
+                obs = obs[0]
             self._save_obs(env_idx, obs)
         return self._obs_from_buf()
 
